@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "Account": {
+      "title": "Social Media Account",
+      "description": "A linked social media account from various providers.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The Firebase Auth UID of the owner." },
+        "provider": { "type": "string", "enum": ["facebook", "linkedin", "whatsapp", "email", "instagram"], "description": "Platform provider." },
+        "providerId": { "type": "string", "description": "The unique ID from the provider." },
+        "profileName": { "type": "string", "description": "Name of the profile/page." },
+        "profileImage": { "type": "string", "description": "URL to the profile picture." },
+        "encryptedAccessToken": { "type": "string", "description": "Access token for the API." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "provider", "providerId", "encryptedAccessToken"]
+    },
+    "Post": {
+      "title": "Social Media Post",
+      "description": "Content scheduled or published to social media platforms.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner of the post." },
+        "content": { "type": "string", "description": "Text content of the post." },
+        "mediaUrls": { "type": "array", "items": { "type": "string" }, "description": "List of media URLs." },
+        "platforms": { "type": "array", "items": { "type": "string" }, "description": "Target platforms." },
+        "status": { "type": "string", "enum": ["draft", "scheduled", "published", "failed"], "description": "Current status." },
+        "scheduledAt": { "type": "integer", "description": "Scheduled timestamp in milliseconds." },
+        "publishedAt": { "type": "integer", "description": "Actual publish time." },
+        "createdAt": { "type": "integer", "description": "Creation time." }
+      },
+      "required": ["userId", "content", "platforms", "status", "createdAt"]
+    },
+    "Engagement": {
+      "title": "Social Engagement",
+      "description": "A comment or message from a platform awaiting response.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner of the engagement." },
+        "platform": { "type": "string", "description": "Source platform." },
+        "type": { "type": "string", "enum": ["comment", "message"], "description": "Type of engagement." },
+        "senderName": { "type": "string", "description": "Name of the person who engaged." },
+        "content": { "type": "string", "description": "Content of the engagement." },
+        "aiSuggestedReply": { "type": "string", "description": "AI generated reply suggestion." },
+        "status": { "type": "string", "enum": ["pending", "replied", "dismissed"], "description": "Process status." },
+        "createdAt": { "type": "integer", "description": "Received timestamp." }
+      },
+      "required": ["userId", "platform", "type", "content", "status", "createdAt"]
+    },
+    "AutomationRule": {
+      "title": "Automation Rule",
+      "description": "Rules for automated actions like auto-replies.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "name": { "type": "string", "description": "Name of the rule." },
+        "platform": { "type": "string", "description": "Platform this rule applies to." },
+        "triggerKeywords": { "type": "array", "items": { "type": "string" }, "description": "Keywords to trigger on." },
+        "action": { "type": "string", "enum": ["auto-reply", "notify", "ignore"], "description": "Action to take." },
+        "responseTemplate": { "type": "string", "description": "Template for auto-reply." },
+        "isActive": { "type": "boolean", "description": "Whether the rule is active." },
+        "createdAt": { "type": "integer", "description": "Creation time." }
+      },
+      "required": ["userId", "name", "platform", "action", "isActive", "createdAt"]
+    },
+    "ReplyTemplate": {
+      "title": "Reply Template",
+      "description": "Pre-defined response templates for quick engagement.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "title": { "type": "string", "description": "Short title for the template." },
+        "content": { "type": "string", "description": "The template text." },
+        "createdAt": { "type": "integer", "description": "Creation time." }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "accounts": { "schema": "Account", "description": "User social media accounts connection storage." },
+    "posts": { "schema": "Post", "description": "Scheduled and published content." },
+    "engagements": { "schema": "Engagement", "description": "Inbox for engagement tracking." },
+    "automationRules": { "schema": "AutomationRule", "description": "User defined automation logic." },
+    "replyTemplates": { "schema": "ReplyTemplate", "description": "Library of reusable reply snippets." }
+  }
+}

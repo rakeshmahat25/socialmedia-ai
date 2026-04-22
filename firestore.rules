@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Helpers ---
+    function isValidAccount(data) {
+      return data.userId == request.auth.uid &&
+             data.provider in ['facebook', 'linkedin', 'whatsapp', 'email', 'instagram'] &&
+             data.providerId is string && data.providerId.size() <= 256 &&
+             data.encryptedAccessToken is string && data.encryptedAccessToken.size() <= 2048;
+    }
+
+    function isValidPost(data) {
+      return data.userId == request.auth.uid &&
+             data.content is string && data.content.size() <= 5000 &&
+             data.status in ['draft', 'scheduled', 'published', 'failed'] &&
+             data.platforms is list && data.platforms.size() > 0 &&
+             data.createdAt is int;
+    }
+
+    function isValidEngagement(data) {
+      return data.userId == request.auth.uid &&
+             data.platform is string &&
+             data.type in ['comment', 'message'] &&
+             data.content is string && data.content.size() <= 5000 &&
+             data.status in ['pending', 'replied', 'dismissed'];
+    }
+
+    function isValidRule(data) {
+      return data.userId == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.platform is string &&
+             data.action in ['auto-reply', 'notify', 'ignore'] &&
+             data.isActive is bool;
+    }
+
+    function isValidTemplate(data) {
+      return data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 100 &&
+             data.content is string && data.content.size() <= 2000 &&
+             data.createdAt is int;
+    }
+
+    // --- Rules ---
+
+    match /accounts/{accountId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming());
+      allow update: if isOwner(existing().userId) && isValidAccount(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /posts/{postId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(postId) && isValidPost(incoming());
+      allow update: if isOwner(existing().userId) && isValidPost(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /engagements/{engagementId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(engagementId) && isValidEngagement(incoming());
+      allow update: if isOwner(existing().userId) && isValidEngagement(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /automationRules/{ruleId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(ruleId) && isValidRule(incoming());
+      allow update: if isOwner(existing().userId) && isValidRule(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /replyTemplates/{templateId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(templateId) && isValidTemplate(incoming());
+      allow update: if isOwner(existing().userId) && isValidTemplate(incoming()) &&
+                    incoming().userId == existing().userId;
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}
